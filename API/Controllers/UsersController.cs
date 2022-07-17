@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Data;
+using API.DTOs;
 using API.Entitites;
+using API.Interfaces;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,30 +14,32 @@ using Microsoft.EntityFrameworkCore;
 namespace API.Controllers
 {
 // creamos un controlador base para evitar escribir los atributos todas la veces que se haga un control nuevo y solo heredarlos de el control base que creamos
+    [Authorize]
     public class UsersController : BaseApiController
     {
-        private readonly DataContext _context;
+        private readonly IUserRepository _userRepository;
+        private readonly IMapper _mapper;
 
-        public UsersController(DataContext context)
+        public UsersController(IUserRepository userRepository, IMapper mapper)
         {
-            _context = context;
+            _mapper = mapper;
+            _userRepository = userRepository;
         }
 
         [HttpGet]
-        [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<AppUser>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers()
         {
-            var users = _context.Users.ToListAsync();
+            var users = await _userRepository.GetMembersAsync();
 
-            return await users;    
+            return Ok(users);    
         }
 
         // api/users/3 y aca abajo es la manera corta de escribir lo de arriba
-        [Authorize]
-        [HttpGet("{id}")]
-        public async Task<ActionResult<AppUser>> GetUser(int id)
+        [HttpGet("{username}")]
+        public async Task<ActionResult<MemberDto>> GetUser(string username)
         {
-            return await _context.Users.FindAsync(id);  
+            return await _userRepository.GetMemberAsync(username); 
+            
         }
     }
 }
